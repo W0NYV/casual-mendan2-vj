@@ -1,0 +1,4 @@
+stages:
+  - fs: "shaders/gfx001.glsl"
+    uniforms:
+      hoge: [0.0, 0.0]
