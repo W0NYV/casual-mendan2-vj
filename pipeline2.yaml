@@ -1,4 +1,6 @@
 stages:
   - fs: "shaders/gfx001.glsl"
-    uniforms:
-      hoge: [0.0, 0.0]
+    target: "gfxTex"
+  - fs: "shaders/feedback.glsl"
+    target: "feedbackTex"
+  - fs: "shaders/out.glsl"

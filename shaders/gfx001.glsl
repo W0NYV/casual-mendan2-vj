@@ -4,9 +4,8 @@ out vec4 color;
 
 #pragma include "shaders/common.glsl"
 
-void main() {
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-
+vec3 xorSquare(vec2 p)
+{
     float aspect = resolution.x/resolution.y;
 
     float square = 0.0;
@@ -25,7 +24,28 @@ void main() {
         square = abs(square - step(sdBox(p - pos, size), 0.00001));
     }
 
-    vec3 col = vec3(square);
+    return vec3(square);
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+
+    vec3 rnd = pcg3df(vec3(546.453, 454.312, floor(beat)));
+    vec3 rnd2 = pcg3df(vec3(74.23, 894.23, floor(beat)));
+
+    float f = sin(acos(-1.0) * rnd2.x * 0.5 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
+            + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
+
+    float f2 = sin(5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
+            + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
+
+    float f3 = sin(acos(-1.0) * rnd2.z * 0.5 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
+            + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
+
+    vec3 col = vec3(pow(f, 3.0/2.0), pow(f2, 3.0/2.0), pow(f3, 4.0/5.0));
+
+    col = buttons[16].y < buttons[17].y ? col : xorSquare(p);
 
     color = vec4(col, 1.0);
 }
