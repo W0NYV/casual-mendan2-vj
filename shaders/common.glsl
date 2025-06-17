@@ -44,3 +44,24 @@ float sdBox(vec2 p, vec2 b) {
     vec2 d = abs(p) - b;
     return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
 }
+
+vec3[9] mooreNeighborhood(sampler2D tex, vec2 fragCoord, vec2 resolution) {
+    vec3 mc = texture(tex, (fragCoord + vec2(0.0, 0.0))/resolution.xy).rgb;
+    vec3 mr = texture(tex, (fragCoord + vec2(1.0, 0.0))/resolution.xy).rgb;
+    vec3 ml = texture(tex, (fragCoord + vec2(-1.0, 0.0))/resolution.xy).rgb;
+
+    vec3 tc = texture(tex, (fragCoord + vec2(0.0, 1.0))/resolution.xy).rgb;
+    vec3 tr = texture(tex, (fragCoord + vec2(1.0, 1.0))/resolution.xy).rgb;
+    vec3 tl = texture(tex, (fragCoord + vec2(-1.0, 1.0))/resolution.xy).rgb;
+
+    vec3 bc = texture(tex, (fragCoord + vec2(0.0, -1.0))/resolution.xy).rgb;
+    vec3 br = texture(tex, (fragCoord + vec2(1.0, -1.0))/resolution.xy).rgb;
+    vec3 bl = texture(tex, (fragCoord + vec2(-1.0, -1.0))/resolution.xy).rgb;
+    
+    vec3[9] array;
+    array[0] = tl, array[1] = tc, array[2] = tr;
+    array[3] = ml, array[4] = mc, array[5] = mr;
+    array[6] = bl, array[7] = bc, array[8] = br;
+    
+    return array;
+}
