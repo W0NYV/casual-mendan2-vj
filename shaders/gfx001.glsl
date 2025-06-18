@@ -27,25 +27,57 @@ vec3 xorSquare(vec2 p)
     return vec3(square);
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-
+vec3 interference(vec2 p)
+{
     vec3 rnd = pcg3df(vec3(546.453, 454.312, floor(beat)));
     vec3 rnd2 = pcg3df(vec3(74.23, 894.23, floor(beat)));
 
-    float f = sin(acos(-1.0) * rnd2.x * 0.5 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
+    float f = sin(acos(-1.0) * rnd2.x * 0.15 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
             + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
 
     float f2 = sin(5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
             + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
 
-    float f3 = sin(acos(-1.0) * rnd2.z * 0.5 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
+    float f3 = sin(acos(-1.0) * rnd2.z * 0.15 + 5.0 * beat + length(p - (rnd.xy * 2.0 - 1.0)) * (rnd.z * 27.0 + 3.0)) 
             + sin(8.0 * beat + length(p - vec2(cos(beat / 3.0) * sin(beat), sin(beat / 5.0))) * (rnd2.z * 49.0 + 1.0));
 
-    vec3 col = vec3(pow(f, 3.0/2.0), pow(f2, 3.0/2.0), pow(f3, 4.0/5.0));
+    return vec3(pow(f, 3.0/2.0), pow(f2, 3.0/2.0), pow(f3, 4.0/5.0));
+}
 
-    col = buttons[16].y < buttons[17].y ? col : xorSquare(p);
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+
+    float bounce = texture(AccumTimeTex, vec2(0.0)).x;
+
+    vec3[3] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+
+    vec3 noise = cyclic(vec3(beat/4.0, 324.32, 745.43), 2.0) * 0.5 + vec3(1.0);
+
+    float id = floor(p.x * (0.2 + noise.x) + beat / 2.0) - 0.5;
+    p.x = fract(p.x * (0.2 + noise.x) + beat / 2.0) - 0.5;
+
+    float d = cyclic(vec3(beat / 4.0 + bounce * 0.02, id, 2312.32), 8.0).x;
+    float f = length(p.x + asin(sin(bounce * 0.25 + p.y * (2.0 + d * 8.0))) * 0.2);
+    f = step(f, 0.01 + 0.1 * (cyclic(vec3(id), 2.0).y * 0.5 + 1.0));
+
+    vec3 c = vec3(f);
+    c *= pcg3df(vec3(id)).x < 0.75 ? vec3(1.0) : vec3(1.0, 0.5, 0.0);
+
+    gfxArray[2] = c;
+
+    int minIdx = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        if (buttons[i].y < buttons[minIdx].y)
+        {
+            minIdx = i;
+        }
+    }
+
+    vec3 col = gfxArray[minIdx];
 
     color = vec4(col, 1.0);
 }

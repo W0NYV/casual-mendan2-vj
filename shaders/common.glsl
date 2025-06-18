@@ -3,9 +3,12 @@
 uniform vec4 resolution;
 uniform float time;
 uniform float beat;
+uniform float time_delta;
 
 uniform float sliders[32];
 uniform vec4 buttons[32];
+
+uniform sampler2D AccumTimeTex;
 
 vec3 pcg3df(vec3 v) {
     uvec3 r = floatBitsToUint(v);
@@ -30,6 +33,28 @@ vec2 randomNormal(vec2 p)
     float r = 2.0 * p.y * acos(-1.0);
     
     return vec2(c * cos(r), c * sin(r));
+}
+
+mat3 orthbas( vec3 z ) {
+  z = normalize( z );
+  vec3 up = abs( z.y ) < 0.999 ? vec3( 0, 1, 0 ) : vec3( 0, 0, 1 );
+  vec3 x = normalize( cross( up, z ) );
+  return mat3( x, cross( z, x ), z );
+}
+
+vec3 cyclic( vec3 p, float pump ) {
+  mat3 b = orthbas( vec3( -3.0, 2.0, -1.0 ) );
+  vec4 sum = vec4( 0.0 );
+
+  for( int i = 0; i < 5; i ++ ) {
+    p *= b;
+    p += sin( p.yzx );
+    sum += vec4( cross( cos( p ), sin( p.zxy ) ), 1.0 );
+    p *= 2.0;
+    sum *= pump;
+  }
+  
+  return sum.xyz / sum.w;
 }
 
 mat2 rot(float r) {

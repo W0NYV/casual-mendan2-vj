@@ -1,4 +1,8 @@
 stages:
+  - fs: "shaders/accumulationTime.glsl"
+    target: "AccumTimeTex"
+    resolution: [1, 1]
+    float: true
   - fs: "shaders/gfx001.glsl"
     target: "gfxTex"
   - fs: "shaders/feedback.glsl"

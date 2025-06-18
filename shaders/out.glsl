@@ -12,5 +12,7 @@ void main() {
 
     vec4 col = texture(feedbackTex, uv) * (sliders[0] * 0.5 + 1.0);
 
-    color = col * (1.0 - buttons[0].x);
+    // col.rgb = mix(vec3(1.0, 0.45, 0.0), vec3(0.0), col.rgb);
+
+    color = col * (1.0 - buttons[31].x);
 }
