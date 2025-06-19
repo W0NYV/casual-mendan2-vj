@@ -4,6 +4,8 @@ out vec4 color;
 
 #pragma include "shaders/common.glsl"
 
+#define bounceTime texture(AccumTimeTex, vec2(0.0)).x
+
 vec3 xorSquare(vec2 p)
 {
     float aspect = resolution.x/resolution.y;
@@ -44,32 +46,68 @@ vec3 interference(vec2 p)
     return vec3(pow(f, 3.0/2.0), pow(f2, 3.0/2.0), pow(f3, 4.0/5.0));
 }
 
-void main() {
+vec3 triWave(vec2 p)
+{
+    float bounce = bounceTime;
 
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    vec3 noise = cyclic(vec3(beat/2.0, 324.32, 745.43), 8.0) * 0.5 + vec3(1.0);
 
-    float bounce = texture(AccumTimeTex, vec2(0.0)).x;
-
-    vec3[3] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-
-    vec3 noise = cyclic(vec3(beat/4.0, 324.32, 745.43), 2.0) * 0.5 + vec3(1.0);
-
-    float id = floor(p.x * (0.2 + noise.x) + beat / 2.0) - 0.5;
-    p.x = fract(p.x * (0.2 + noise.x) + beat / 2.0) - 0.5;
+    float id = floor(p.x * (0.2 + noise.x * 2.0) + beat / 2.0) - 0.5;
+    p.x = fract(p.x * (0.2 + noise.x * 2.0) + beat / 2.0) - 0.5;
 
     float d = cyclic(vec3(beat / 4.0 + bounce * 0.02, id, 2312.32), 8.0).x;
-    float f = length(p.x + asin(sin(bounce * 0.25 + p.y * (2.0 + d * 8.0))) * 0.2);
+    float f = length(p.x + asin(sin(bounce * 0.125 + p.y * (2.0 + d * 8.0))) * 0.2);
     f = step(f, 0.01 + 0.1 * (cyclic(vec3(id), 2.0).y * 0.5 + 1.0));
 
     vec3 c = vec3(f);
     c *= pcg3df(vec3(id)).x < 0.75 ? vec3(1.0) : vec3(1.0, 0.5, 0.0);
 
-    gfxArray[2] = c;
+    return c;
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+
+    vec3[4] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    
+    float bounce = bounceTime;
+
+    float f = 0.0;
+
+    for (float k = 0.0; k < 5.0; k += 1.0)
+    {
+        for (float i = 0.0; i < 10.0; i += 1.0)
+        {
+            vec2 pos = cyclic(vec3(bounce * 0.05 + beat / 4.0 + i * 0.125, 412.321 + k * 10.0, 6743.32), 8.0).xy * 0.8;
+            pos.x *= resolution.z;
+
+            float s = abs(randomNormal(pcg3df(vec3(744.423 + k, floor(beat) - 1.0, 12.536 + i)).xy).x);
+            float nexts = abs(randomNormal(pcg3df(vec3(744.423 + k, floor(beat), 12.536 + i)).xy).x);
+
+            s = mix(s, nexts, easeOutElastic(fract(beat))) * 0.1 + 0.1;
+
+            f = abs(f - step(abs(length(p - pos) - s + i * 0.01), 0.002));
+            f = abs(f - step(length(p - pos), s * 0.1 + 0.01 + (10.0 - i) * 0.005));
+        }
+    }
+
+    vec2 fp = fract(p * 6.0) - 0.5;
+    vec2 ip = floor(p * 6.0) - 0.5;
+    float a = step(pcg3df(vec3(floor(beat), ip)).x, 0.65);
+    float pastA = step(pcg3df(vec3(floor(beat - 1.0), ip)).x, 0.65);
+    a = mix(pastA, a, easeOutElastic(fract(beat)));
+    float squ = clamp(step(sdBox(fp, vec2(0.1, 0.01)), 0.001) + step(sdBox(fp, vec2(0.01, 0.1)), 0.001), 0.0, 1.0) * a;
+
+    vec3 c = vec3(f);
+
+    gfxArray[3] = c;
 
     int minIdx = 0;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 4; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
