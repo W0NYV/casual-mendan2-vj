@@ -65,20 +65,13 @@ vec3 triWave(vec2 p)
     return c;
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-
-    vec3[4] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    
+vec3 worm(vec2 p)
+{
     float bounce = bounceTime;
 
     float f = 0.0;
 
-    for (float k = 0.0; k < 5.0; k += 1.0)
+    for (float k = 0.0; k < 7.0; k += 1.0)
     {
         for (float i = 0.0; i < 10.0; i += 1.0)
         {
@@ -102,12 +95,53 @@ void main() {
     a = mix(pastA, a, easeOutElastic(fract(beat)));
     float squ = clamp(step(sdBox(fp, vec2(0.1, 0.01)), 0.001) + step(sdBox(fp, vec2(0.01, 0.1)), 0.001), 0.0, 1.0) * a;
 
+    return vec3(f);
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+
+    vec3[5] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    gfxArray[3] = worm(p);
+
+    float f = 0.0;
+    float r = mix(pcg3df(vec3(7544.34, 1243.2, floor(beat - 1.0))).x, pcg3df(vec3(7544.34, 1243.2, floor(beat))).x, easeOutElastic(fract(beat)));
+
+
+    for (float i = 0.0; i < 14.0; i += 1.0)
+    {
+        vec2 pp = p;
+
+        float offset = i * 0.025;
+
+        // vec3 pastRnd = pcg3df(vec3(floor(beat) - 1.0, 78.54, 842.3));
+        vec3 rnd = pcg3df(vec3(floor(beat - offset), 78.54 + i, 842.3));
+        vec2 rnd2 = randomNormal(pcg3df(vec3(354.56, floor(beat - offset), 956.33 + i)).xy);
+
+
+        // float r = mix(pastRnd.x, rnd.x, easeOutElastic(fract(beat)));
+        pp *= rot(acos(-1.0) / 2.0 * r);
+
+        pp.y += rnd.x * 4.0 - 2.0;
+        pp.x += mix(rnd.y - 0.5, rnd.z * 2.0 - 1.0, easeOutElastic(fract(beat - offset)));
+
+        // p.x += fract(time);
+
+        pp = abs(pp);
+
+        f = abs(f - step(sin(1.25 * (pow(pp.x, 2.0/5.0) + pow(pp.y, 2.0/3.5) - (abs(rnd2.x) * 0.35 + 0.3))), 0.0001));
+    }
+
     vec3 c = vec3(f);
 
-    gfxArray[3] = c;
+    gfxArray[4] = c;
 
     int minIdx = 0;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 5; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
