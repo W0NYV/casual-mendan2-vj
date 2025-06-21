@@ -8,3 +8,7 @@ stages:
   - fs: "shaders/feedback.glsl"
     target: "feedbackTex"
   - fs: "shaders/out.glsl"
+
+images:
+  - path: "cm2.png"
+    name: "logoTex"

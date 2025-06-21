@@ -60,7 +60,7 @@ vec3 triWave(vec2 p)
     f = step(f, 0.01 + 0.1 * (cyclic(vec3(id), 2.0).y * 0.5 + 1.0));
 
     vec3 c = vec3(f);
-    c *= pcg3df(vec3(id)).x < 0.75 ? vec3(1.0) : vec3(1.0, 0.5, 0.0);
+    c *= pcg3df(vec3(id)).x < 0.75 ? vec3(1.0) : vec3(1.0, 0.45, 0.0);
 
     return c;
 }
@@ -101,6 +101,7 @@ vec3 worm(vec2 p)
 void main() {
 
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
 
     vec3[5] gfxArray;
     gfxArray[0] = xorSquare(p);
