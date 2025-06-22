@@ -123,18 +123,7 @@ vec3 springStar(vec2 p)
     return vec3(f);
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p = sliders[7] == 1.0 ? abs(p) : p;
-
-    vec3[6] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    gfxArray[3] = worm(p);
-    gfxArray[4] = springStar(p);
-
+vec3 crossTile(vec2 p) {
     vec3 rnd = pcg3df(vec3(74.31, 3423.32, floor(beat)));
 
     vec2 ip = floor(p * 3.0) - 0.5;
@@ -162,10 +151,45 @@ void main() {
     fp *= rot(acos(-1.0) / 4.0);
     float s = step(sdBox(fp, vec2(0.025, 0.3)), 0.0001) + step(sdBox(fp, vec2(0.3, 0.025)), 0.0001);
 
-    gfxArray[5] = vec3(s);
+    return vec3(s);
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
+
+    vec3[7] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    gfxArray[3] = worm(p);
+    gfxArray[4] = springStar(p);
+    gfxArray[5] = crossTile(p);
+
+    vec3 c = vec3(0.0);
+    vec2 reso = vec2(80.0, 45.0);
+    vec2 p2 = p;
+    vec3 rnd = pcg3df(vec3(floor(beat), 64.3, 123.12));
+
+    for (float i = 0.0; i < 6.0; i += 1.0)
+    {
+        vec3 rnd2 = pcg3df(vec3(435.23, floor(beat), i));
+        vec3 n = cyclic(vec3(p.x * 1.2 + i * 0.5, beat / 2.0, (floor(beat) + easeOutExpo(fract(beat))) * 2.0), 10.0);
+
+        vec3 circle = vec3(1.0, 0.0, 0.0) * step(abs(length(floor((p2 - randomNormal(rnd2.xy) * 0.5) * reso) / reso) - 0.2 - rnd2.z * 0.2), 0.01);
+        c += circle;
+
+        p *= rot(acos(-1.0) * (rnd.x * 2.0 - 1.0) * 0.15);
+
+        c += vec3(step(length((floor(p.y*reso)/reso) + n.x * 0.3), 0.015));
+    }
+
+
+    gfxArray[6] = c;
 
     int minIdx = 0;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
