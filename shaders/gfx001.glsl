@@ -138,22 +138,29 @@ void main() {
     vec3 rnd = pcg3df(vec3(74.31, 3423.32, floor(beat)));
 
     vec2 ip = floor(p * 3.0) - 0.5;
-    vec2 fp = fract(p * 3.0) - 0.5;
 
-    if (mod(floor(beat), 2.0) == 1.0)
-    {
-        p.x -= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? easeOutExpo(fract(beat)) / 3.0 : 0.0;
-        // fp *= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? rot(fract(beat) * acos(-1.0)) : mat2(1.0, 0.0, 0.0, 1.0);
+    float factor = rnd.z < 0.5 ? 1.0 : -1.0;
 
+    if (mod(floor(beat), 2.0) == 1.0) {
+        p.x -= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? factor * easeOutExpo(fract(beat)) / 3.0 : 0.0;
     } 
     else
     {
-        p.y -= floor(rnd.x * 2.99) == ip.x + 0.5 ? easeOutExpo(fract(beat)) / 3.0 : 0.0;
+        p.y -= floor(rnd.x * 6.0) - 3.0 == ip.x + 0.5 ? factor * easeOutExpo(fract(beat)) / 3.0 : 0.0;
     }
 
+    vec2 fp = fract(p * 3.0) - 0.5;
 
+    if (mod(floor(beat), 2.0) == 1.0) {
+        fp *= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? rot(fract(beat) * acos(-1.0) / 2.0 * factor) : mat2(1.0, 0.0, 0.0, 1.0);
+    } 
+    else
+    {
+        fp *= floor(rnd.x * 6.0) - 3.0 == ip.x + 0.5 ? rot(fract(beat) * acos(-1.0) / 2.0 * factor) : mat2(1.0, 0.0, 0.0, 1.0);
+    }
 
-    float s = step(sdBox(fp, vec2(0.1)), 0.0001);
+    fp *= rot(acos(-1.0) / 4.0);
+    float s = step(sdBox(fp, vec2(0.025, 0.3)), 0.0001) + step(sdBox(fp, vec2(0.3, 0.025)), 0.0001);
 
     gfxArray[5] = vec3(s);
 
