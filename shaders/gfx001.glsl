@@ -4,8 +4,6 @@ out vec4 color;
 
 #pragma include "shaders/common.glsl"
 
-#define bounceTime texture(AccumTimeTex, vec2(0.0)).x
-
 vec3 xorSquare(vec2 p)
 {
     float aspect = resolution.x/resolution.y;
@@ -48,15 +46,15 @@ vec3 interference(vec2 p)
 
 vec3 triWave(vec2 p)
 {
-    float bounce = bounceTime;
+    float bounce = floor(beat) + easeOutExpo(fract(beat));
 
     vec3 noise = cyclic(vec3(beat/2.0, 324.32, 745.43), 8.0) * 0.5 + vec3(1.0);
 
     float id = floor(p.x * (0.2 + noise.x * 2.0) + beat / 2.0) - 0.5;
     p.x = fract(p.x * (0.2 + noise.x * 2.0) + beat / 2.0) - 0.5;
 
-    float d = cyclic(vec3(beat / 4.0 + bounce * 0.02, id, 2312.32), 8.0).x;
-    float f = length(p.x + asin(sin(bounce * 0.125 + p.y * (2.0 + d * 8.0))) * 0.2);
+    float d = cyclic(vec3(beat / 4.0 + bounce * 0.65, id, 2312.32), 8.0).x;
+    float f = length(p.x + asin(sin(bounce * 0.75 + p.y * (2.0 + d * 8.0))) * 0.2);
     f = step(f, 0.01 + 0.1 * (cyclic(vec3(id), 2.0).y * 0.5 + 1.0));
 
     vec3 c = vec3(f);
@@ -67,7 +65,7 @@ vec3 triWave(vec2 p)
 
 vec3 worm(vec2 p)
 {
-    float bounce = bounceTime;
+    float bounce = floor(beat) + easeOutExpo(fract(beat));
 
     float f = 0.0;
 
@@ -75,7 +73,7 @@ vec3 worm(vec2 p)
     {
         for (float i = 0.0; i < 10.0; i += 1.0)
         {
-            vec2 pos = cyclic(vec3(bounce * 0.05 + beat / 4.0 + i * 0.125, 412.321 + k * 10.0, 6743.32), 8.0).xy * 0.8;
+            vec2 pos = cyclic(vec3(bounce + beat / 4.0 + i * 0.125, 412.321 + k * 10.0, 6743.32), 8.0).xy * 0.8;
             pos.x *= resolution.z;
 
             float s = abs(randomNormal(pcg3df(vec3(744.423 + k, floor(beat) - 1.0, 12.536 + i)).xy).x);
@@ -98,20 +96,10 @@ vec3 worm(vec2 p)
     return vec3(f);
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p = sliders[7] == 1.0 ? abs(p) : p;
-
-    vec3[5] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    gfxArray[3] = worm(p);
-
+vec3 springStar(vec2 p)
+{
     float f = 0.0;
     float r = mix(pcg3df(vec3(7544.34, 1243.2, floor(beat - 1.0))).x, pcg3df(vec3(7544.34, 1243.2, floor(beat))).x, easeOutElastic(fract(beat)));
-
 
     for (float i = 0.0; i < 14.0; i += 1.0)
     {
@@ -119,30 +107,58 @@ void main() {
 
         float offset = i * 0.025;
 
-        // vec3 pastRnd = pcg3df(vec3(floor(beat) - 1.0, 78.54, 842.3));
         vec3 rnd = pcg3df(vec3(floor(beat - offset), 78.54 + i, 842.3));
         vec2 rnd2 = randomNormal(pcg3df(vec3(354.56, floor(beat - offset), 956.33 + i)).xy);
 
-
-        // float r = mix(pastRnd.x, rnd.x, easeOutElastic(fract(beat)));
         pp *= rot(acos(-1.0) / 2.0 * r);
 
         pp.y += rnd.x * 4.0 - 2.0;
         pp.x += mix(rnd.y - 0.5, rnd.z * 2.0 - 1.0, easeOutElastic(fract(beat - offset)));
-
-        // p.x += fract(time);
 
         pp = abs(pp);
 
         f = abs(f - step(sin(1.25 * (pow(pp.x, 2.0/5.0) + pow(pp.y, 2.0/3.5) - (abs(rnd2.x) * 0.35 + 0.3))), 0.0001));
     }
 
-    vec3 c = vec3(f);
+    return vec3(f);
+}
 
-    gfxArray[4] = c;
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
+
+    vec3[6] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    gfxArray[3] = worm(p);
+    gfxArray[4] = springStar(p);
+
+    vec3 rnd = pcg3df(vec3(74.31, 3423.32, floor(beat)));
+
+    vec2 ip = floor(p * 3.0) - 0.5;
+    vec2 fp = fract(p * 3.0) - 0.5;
+
+    if (mod(floor(beat), 2.0) == 1.0)
+    {
+        p.x -= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? easeOutExpo(fract(beat)) / 3.0 : 0.0;
+        // fp *= floor(rnd.x * 6.0) - 3.0 == ip.y + 0.5 ? rot(fract(beat) * acos(-1.0)) : mat2(1.0, 0.0, 0.0, 1.0);
+
+    } 
+    else
+    {
+        p.y -= floor(rnd.x * 2.99) == ip.x + 0.5 ? easeOutExpo(fract(beat)) / 3.0 : 0.0;
+    }
+
+
+
+    float s = step(sdBox(fp, vec2(0.1)), 0.0001);
+
+    gfxArray[5] = vec3(s);
 
     int minIdx = 0;
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {

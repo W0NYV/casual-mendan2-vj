@@ -8,8 +8,6 @@ uniform float time_delta;
 uniform float sliders[32];
 uniform vec4 buttons[32];
 
-uniform sampler2D AccumTimeTex;
-
 vec3 pcg3df(vec3 v) {
     uvec3 r = floatBitsToUint(v);
     r = r * 1664525u + 1013904223u;
