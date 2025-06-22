@@ -2,17 +2,35 @@
 
 uniform sampler2D gfxTex;
 uniform sampler2D feedbackTex;
+uniform sampler2D logoTex;
 
 out vec4 color;
 
 #pragma include "shaders/common.glsl"
 
+vec4 logo(vec2 uv, vec2 p, float scale, float offset, float offset2, float t) {
+    vec2 p2 = p;
+    p2 += offset;
+    float alpha = mod(floor(uv.x * 4.0 + t), 2.0) == 1.0 ? 1.0 : 0.0;
+    vec2 logoUv = vec2(fract(uv.x * 4.0 + t), uv.y * 4.0 - offset2);
+    float s = step(sdBox(p2, vec2(10.0, scale)), 0.0001);
+    vec4 logo = vec4(s) - texture(logoTex, logoUv) * alpha;
+
+    return vec4(logo.rgb, s);
+}
+
 void main() {
 
     vec2 uv = (gl_FragCoord.xy / resolution.xy);
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+
+    vec4 logo1 = logo(uv, p, 0.035, -0.965, 3.435, beat / 16.0);
+    vec4 logo2 = logo(uv, p, 0.035, 0.965, -0.435, -beat / 16.0);
+
+    vec3 n = cyclic(vec3(uv, beat / 8.0), 10.0);
 
     vec4 col = texture(gfxTex, uv);
-    vec4 past = texture(feedbackTex, uv);
+    vec4 past = texture(feedbackTex, uv + n.xy * 0.01);
 
     // https://www.shadertoy.com/view/4tcyRN ありがとん
     float scale = 16.0/9.0 * 12.0;
@@ -52,5 +70,12 @@ void main() {
     //     col.b = cnt.b == 3.0 || cnt.b == 4.0 || cnt.b == 6.0 || cnt.b == 7.0 || cnt.b == 8.0 ? 1.0 : 0.0;
     // }
 
-    color = mix(col, abs(col - past), sliders[0] * 0.95);
+    // abs(abs(sin(col*10.0 + iTime * 10.0)) - pow(backCol, vec4(0.85)))
+
+    // color = mix(col, past, sliders[0] * 1.0);
+
+    col *= (1.0 - logo1.a) * (1.0 - logo2.a);
+    col += logo1.x + logo2.x;
+
+    color = mix(col, abs(sin(col * 1.1) - cos(past * 1.3)), sliders[0] * 0.975);
 }
