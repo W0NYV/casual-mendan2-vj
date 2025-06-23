@@ -24,8 +24,8 @@ void main() {
     vec2 uv = (gl_FragCoord.xy / resolution.xy);
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
 
-    vec4 logo1 = logo(uv, p, 0.035, -0.965, 3.435, beat / 16.0);
-    vec4 logo2 = logo(uv, p, 0.035, 0.965, -0.435, -beat / 16.0);
+    vec4 logo1 = logo(uv, p, 0.035, -0.965, 3.430, beat / 16.0);
+    vec4 logo2 = logo(uv, p, 0.035, 0.965, -0.430, -beat / 16.0);
 
     vec3 n = cyclic(vec3(uv, beat / 8.0), 10.0);
 
@@ -77,5 +77,5 @@ void main() {
     col *= (1.0 - logo1.a) * (1.0 - logo2.a);
     col += logo1.x + logo2.x;
 
-    color = mix(col, abs(sin(col * 1.1) - cos(past * 1.3)), sliders[0] * 0.975);
+    color = mix(col, abs(sin(col * 1.1) - cos(past * 1.2)), sliders[0] * 0.975);
 }
