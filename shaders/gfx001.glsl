@@ -1,5 +1,7 @@
 #version 440
 
+uniform sampler2D logoTex;
+
 out vec4 color;
 
 #pragma include "shaders/common.glsl"
@@ -124,6 +126,9 @@ vec3 springStar(vec2 p)
 }
 
 vec3 crossTile(vec2 p) {
+
+    p *= 0.98;
+
     vec3 rnd = pcg3df(vec3(74.31, 3423.32, floor(beat)));
 
     vec2 ip = floor(p * 3.0) - 0.5;
@@ -149,24 +154,13 @@ vec3 crossTile(vec2 p) {
     }
 
     fp *= rot(acos(-1.0) / 4.0);
-    float s = step(sdBox(fp, vec2(0.025, 0.3)), 0.0001) + step(sdBox(fp, vec2(0.3, 0.025)), 0.0001);
+    float s = step(sdBox(fp, vec2(0.02, 0.2)), 0.0001) + step(sdBox(fp, vec2(0.2, 0.02)), 0.0001);
 
     return vec3(s);
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p = sliders[7] == 1.0 ? abs(p) : p;
-
-    vec3[7] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    gfxArray[3] = worm(p);
-    gfxArray[4] = springStar(p);
-    gfxArray[5] = crossTile(p);
-
+vec3 pixelateCurve(vec2 p)
+{
     vec3 c = vec3(0.0);
     vec2 reso = vec2(80.0, 45.0);
     vec2 p2 = p;
@@ -185,11 +179,54 @@ void main() {
         c += vec3(step(length((floor(p.y*reso)/reso) + n.x * 0.3), 0.015));
     }
 
+    return c;
+}
 
-    gfxArray[6] = c;
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
+
+    vec3[8] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    gfxArray[3] = worm(p);
+    gfxArray[4] = springStar(p);
+    gfxArray[5] = crossTile(p);
+    gfxArray[6] = pixelateCurve(p);
+    
+    
+    float t = floor(beat) + easeOutExpo(fract(beat));
+
+    vec3 c = vec3(0.0);
+
+    vec3 tRand = pcg3df(vec3(floor(beat), 7645.324, 32.23));
+
+    p *= 0.05 + tRand.y * 1.0;
+
+    float s = 0.0;
+
+    for (float i = 0.0; i < 20.0; i += 1.0)
+    {
+        s += i;
+        vec3 rnd = pcg3df(vec3(i, floor(beat), 243.23));
+
+        vec2 p2 = p;
+        float a = rnd.z < 0.5 ? -1.0 : 1.0;
+        p2 *= rot(rnd.x * acos(-1.0) * 2.0 + beat / 4.0 * a + a * t * acos(-1.0) * rnd.y * 0.4);
+        p2 = vec2(atan(p2.x, p2.y), length(p2) * 2.0);
+
+        p *= 1.0 / (1.0 - p.x * (tRand.x * 2.0 - 1.0) * 0.2);
+        p *= 1.0 / (1.0 - p.y * (tRand.z * 2.0 - 1.0) * 0.2);
+
+        c += texture(logoTex, p2 * vec2(0.3, 30.0 / s * 0.9)).rgb;
+    }
+
+    gfxArray[7] = c;
 
     int minIdx = 0;
-    for (int i = 0; i < 7; i++)
+    for (int i = 0; i < 8; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
