@@ -293,7 +293,29 @@ void main() {
     gfxArray[8] = triangles(p);
     gfxArray[9] = moon(p);
 
-    gfxArray[10] = vec3(p, 0.0);
+    // float fpy = fract(p.y * 10.0) - 0.5;
+    // float ipy = floor(p.y * 10.0) - 0.5;
+
+    // vec3 rnd = pcg3df(vec3(ipy, 654.342, 84.33));
+
+    float f = 0.0;
+    float t = floor(beat) + easeOutExpo(fract(beat));
+
+    for (float j = 1.0; j < 10.0; j += 1.0)
+    {
+        for (float i = 0.0; i < 7.0; i += 1.0)
+        {
+            vec2 p2 = p * j;
+            vec3 rnd = pcg3df(vec3(i + 42.22, 654.342 + j, 84.33));
+
+            p2.x += cyclic(vec3(p2 * 0.15, beat / 4.0 + t), 8.0).x * 2.25;
+            p2.x += (rnd.x * 2.0 - 1.0) * 1.25 * j;
+        
+            f += pow(fract(p2.y / 8.0 - beat / (2.0 + rnd.y) + rnd.z), 7.0) * step(length(p2.x), 0.23);
+        }
+    }
+
+    gfxArray[10] = vec3(f);
 
     int minIdx = 0;
     for (int i = 0; i < 11; i++)
