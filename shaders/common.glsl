@@ -59,6 +59,13 @@ mat2 rot(float r) {
     return mat2(cos(r), sin(r), -sin(r), cos(r));
 }
 
+float smin( float a, float b, float k )
+{
+    k *= 6.0;
+    float h = max( k-abs(a-b), 0.0 )/k;
+    return min(a,b) - h*h*h*k*(1.0/6.0);
+}
+
 float easeOutExpo(float x) {
     return x == 1.0 ? 1.0 : 1.0 - pow(2.0, - 10.0 * x);
 }
@@ -71,6 +78,24 @@ float easeOutElastic(float x) {
 float sdBox(vec2 p, vec2 b) {
     vec2 d = abs(p) - b;
     return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+float sdSegment(vec2 p, vec2 a, vec2 b )
+{
+    vec2 pa = p-a, ba = b-a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return length( pa - ba*h );
+}
+
+float sdMoon(vec2 p, float d, float ra, float rb )
+{
+    p.y = abs(p.y);
+    float a = (ra*ra - rb*rb + d*d)/(2.0*d);
+    float b = sqrt(max(ra*ra-a*a,0.0));
+    if( d*(p.x*b-p.y*a) > d*d*max(b-p.y,0.0) )
+          return length(p-vec2(a,b));
+    return max( (length(p          )-ra),
+               -(length(p-vec2(d,0))-rb));
 }
 
 vec3[9] mooreNeighborhood(sampler2D tex, vec2 fragCoord, vec2 resolution) {

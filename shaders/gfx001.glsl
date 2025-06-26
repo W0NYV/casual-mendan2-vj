@@ -182,21 +182,8 @@ vec3 pixelateCurve(vec2 p)
     return c;
 }
 
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p = sliders[7] == 1.0 ? abs(p) : p;
-
-    vec3[8] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    gfxArray[3] = worm(p);
-    gfxArray[4] = springStar(p);
-    gfxArray[5] = crossTile(p);
-    gfxArray[6] = pixelateCurve(p);
-    
-    
+vec3 logoRotation(vec2 p)
+{
     float t = floor(beat) + easeOutExpo(fract(beat));
 
     vec3 c = vec3(0.0);
@@ -223,10 +210,93 @@ void main() {
         c += texture(logoTex, p2 * vec2(0.3, 30.0 / s * 0.9)).rgb;
     }
 
-    gfxArray[7] = c;
+    return c;
+}
+
+vec3 triangles(vec2 p)
+{
+    float s = 0.0015;
+    vec3 tri = vec3(0.0);
+    vec2 aspect = vec2(1.8, 1.0) * 0.85;
+
+    for (float i = 0.0; i < 7.0; i += 1.0)
+    {
+        vec3 pastRnd = pcg3df(vec3(floor(beat)-1.0, 74.234 + i, 463.23));
+        vec3 rnd = pcg3df(vec3(floor(beat), 74.234 + i, 463.23));
+        vec3 pastRnd2 = pcg3df(vec3(743.22, floor(beat)-1.0, 845.43 - i));
+        vec3 rnd2 = pcg3df(vec3(743.22, floor(beat), 845.43 - i));
+
+        vec3 lr = mix(pastRnd, rnd, easeOutElastic(fract(beat)));
+        vec3 lr2 = mix(pastRnd2, rnd2, easeOutElastic(fract(beat)));
+
+        vec2 pos = (lr.xy * 2.0 - 1.0) * aspect;
+        vec2 pos2 = (vec2(lr.z, lr2.x) * 2.0 - 1.0) * aspect;
+        vec2 pos3 = (lr2.yz * 2.0 - 1.0) * aspect;
+
+        tri += vec3(1.0) * step(sdSegment(p, pos, pos2), s) + step(sdSegment(p, pos2, pos3), s) + step(sdSegment(p, pos3, pos), s);
+
+        tri += vec3(1.0, 0.0, 0.0) * (step(sdBox(p - pos, vec2(0.005, 0.025)), 0.00001) + step(sdBox(p - pos - vec2(0.0, 0.005), vec2(0.02, 0.005)), 0.00001));
+        tri += vec3(1.0, 0.0, 0.0) * (step(sdBox(p - pos2, vec2(0.005, 0.025)), 0.00001) + step(sdBox(p - pos2 - vec2(0.0, 0.005), vec2(0.02, 0.005)), 0.00001));
+        tri += vec3(1.0, 0.0, 0.0) * (step(sdBox(p - pos3, vec2(0.005, 0.025)), 0.00001) + step(sdBox(p - pos3 - vec2(0.0, 0.005), vec2(0.02, 0.005)), 0.00001));
+
+    }
+
+    return tri;
+}
+
+vec3 moon(vec2 p)
+{
+    vec3 rnd = pcg3df(vec3(floor(beat), 85.34, 524.21));
+
+    float m = sdBox(p, vec2(0.95 + rnd.x, 0.005));
+
+    for (float i = 0.0; i < 7.0; i += 1.0)
+    {
+        vec3 irnd = pcg3df(vec3(floor(beat), i + 645.34, 412.23));
+        float s = sdBox(p - (irnd.xy * 2.0 - 1.0) * vec2(1.2, 0.3), vec2(0.002, irnd.z * 0.75));
+        m = smin(m, s, 0.01);
+    }
+
+    for (float i = 0.0; i < 16.0; i += 1.0)
+    {
+        vec2 p2 = p;
+        vec3 irnd = pcg3df(vec3(8735.324, floor(beat), i + 523.123));
+        vec3 irnd2 = pcg3df(vec3(i + 1251.2, 76.43214, floor(beat)));
+
+        vec2 pos = (irnd.yz * 2.0 - 1.0) * vec2(1.3, 0.35);
+        float size = 0.1 + irnd2.x * 0.35;
+        float offset = irnd2.y * 0.025 + 0.975;
+
+        p2 *= rot(acos(-1.0) * 2.0 * irnd.x + beat / 8.0);
+        p2 -= pos * rot(acos(-1.0) * 2.0 * irnd.x + beat / 8.0);
+
+        m = smin(m, sdMoon(p2, irnd2.z * 0.025, size, size * offset), 0.01);
+    }
+
+    return vec3(step(m + 0.0001, 0.0001));
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
+
+    vec3[11] gfxArray;
+    gfxArray[0] = xorSquare(p);
+    gfxArray[1] = interference(p);
+    gfxArray[2] = triWave(p);
+    gfxArray[3] = worm(p);
+    gfxArray[4] = springStar(p);
+    gfxArray[5] = crossTile(p);
+    gfxArray[6] = pixelateCurve(p);
+    gfxArray[7] = logoRotation(p);
+    gfxArray[8] = triangles(p);
+    gfxArray[9] = moon(p);
+
+    gfxArray[10] = vec3(p, 0.0);
 
     int minIdx = 0;
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 11; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
