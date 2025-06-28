@@ -8,3 +8,7 @@ stages:
 images:
   - path: "cm2.png"
     name: "logoTex"
+
+ndi:
+  - source: "TouchDesigner"
+    name: "ndi"

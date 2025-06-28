@@ -244,60 +244,8 @@ vec3 triangles(vec2 p)
     return tri;
 }
 
-vec3 moon(vec2 p)
+vec3 momen(vec2 p)
 {
-    vec3 rnd = pcg3df(vec3(floor(beat), 85.34, 524.21));
-
-    float m = sdBox(p, vec2(0.95 + rnd.x, 0.005));
-
-    for (float i = 0.0; i < 7.0; i += 1.0)
-    {
-        vec3 irnd = pcg3df(vec3(floor(beat), i + 645.34, 412.23));
-        float s = sdBox(p - (irnd.xy * 2.0 - 1.0) * vec2(1.2, 0.3), vec2(0.002, irnd.z * 0.75));
-        m = smin(m, s, 0.01);
-    }
-
-    for (float i = 0.0; i < 16.0; i += 1.0)
-    {
-        vec2 p2 = p;
-        vec3 irnd = pcg3df(vec3(8735.324, floor(beat), i + 523.123));
-        vec3 irnd2 = pcg3df(vec3(i + 1251.2, 76.43214, floor(beat)));
-
-        vec2 pos = (irnd.yz * 2.0 - 1.0) * vec2(1.3, 0.35);
-        float size = 0.1 + irnd2.x * 0.35;
-        float offset = irnd2.y * 0.025 + 0.975;
-
-        p2 *= rot(acos(-1.0) * 2.0 * irnd.x + beat / 8.0);
-        p2 -= pos * rot(acos(-1.0) * 2.0 * irnd.x + beat / 8.0);
-
-        m = smin(m, sdMoon(p2, irnd2.z * 0.025, size, size * offset), 0.01);
-    }
-
-    return vec3(step(m + 0.0001, 0.0001));
-}
-
-void main() {
-
-    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
-    p = sliders[7] == 1.0 ? abs(p) : p;
-
-    vec3[11] gfxArray;
-    gfxArray[0] = xorSquare(p);
-    gfxArray[1] = interference(p);
-    gfxArray[2] = triWave(p);
-    gfxArray[3] = worm(p);
-    gfxArray[4] = springStar(p);
-    gfxArray[5] = crossTile(p);
-    gfxArray[6] = pixelateCurve(p);
-    gfxArray[7] = logoRotation(p);
-    gfxArray[8] = triangles(p);
-    gfxArray[9] = moon(p);
-
-    // float fpy = fract(p.y * 10.0) - 0.5;
-    // float ipy = floor(p.y * 10.0) - 0.5;
-
-    // vec3 rnd = pcg3df(vec3(ipy, 654.342, 84.33));
-
     float f = 0.0;
     float t = floor(beat) + easeOutExpo(fract(beat));
 
@@ -315,10 +263,92 @@ void main() {
         }
     }
 
-    gfxArray[10] = vec3(f);
+    return vec3(f);
+}
+
+vec3 expandedLogos(vec2 p)
+{
+    vec2 uv = vec2(0.0);
+
+    p.x *= resolution.y/resolution.x;
+
+    p.x += 0.2;
+    p.y += beat / 8.0;
+
+    vec2 id = floor(p * 2.5);
+    uv = fract(p * 2.5);
+
+    vec3 rnd = pcg3df(vec3(floor(beat/2.0), 232.324 + id.x, 342.232 + id.y));
+    vec3 rnd2 = pcg3df(vec3(744.34 + id.x, floor(beat/2.0), 934.21 + id.y));
+
+    float a = 0.2 + rnd.x * 0.8;
+    float b = 1.0 + mix(0.0, rnd.y * 0.15, floor(mod(beat, 2.0)) == 1.0 ? easeOutElastic(fract(-beat)) : easeOutExpo(fract(beat)));
+
+    float a2 = 0.45 + rnd.x * 0.1;
+    float b2 = 1.0 + mix(0.0, rnd2.y * 0.75, floor(mod(beat, 2.0)) == 1.0 ? easeOutElastic(fract(-beat)) : easeOutExpo(fract(beat)));
+
+    if (a <= uv.x && uv.x < a * b)
+    {
+        uv.x = a;
+    }
+    else if (a * b <= uv.x)
+    {
+        uv.x -= a * b - a;
+    }
+
+    if (a2 <= uv.y && uv.y < a2 * b2)
+    {
+        uv.y = a2;
+    }
+    else if (a2 * b2 <= uv.y)
+    {
+        uv.y -= a2 * b2 - a2;
+    }
+
+    vec3 logo = texture(logoTex, uv).rgb;
+    
+    logo *= rnd2.z < 0.1 ? vec3(1.0, 0.0, 0.0) : vec3(1.0);
+
+    return logo;
+}
+
+vec3 neighbor(vec2 p)
+{
+    vec3 noise = cyclic(vec3(beat * 0.2, floor(beat), 323.12), 6.0);
+    vec2 pos = noise.xy * vec2(1.2, 0.7);
+
+    vec3 noise2 = cyclic(vec3(beat * 0.2, floor(beat), 434.32), 6.0);
+    vec2 pos2 = noise2.xy * vec2(1.2, 0.7);
+
+    float f = step(length(p - pos), 0.05) + step(length(p - pos2), 0.05);
+
+    for (float i = 0.0; i < 40.0; i += 1.0)
+    {
+        vec3 rnd = pcg3df(vec3(floor(beat), 452.131 + i, 145.331));
+        vec3 cnoise = cyclic(vec3(i + 3123.23, beat, floor(beat)), 6.0);
+
+        vec2 cPos = rnd.xy * 2.0 - 1.0 + cnoise.xy * 0.05;
+        cPos *= vec2(1.6, 0.9);
+
+        float c = step(length(p - cPos), 0.0125);
+
+        vec2 target = length(cPos - pos) < length(cPos - pos2) ? pos : pos2;
+
+        float l = step(sdSegment(p, target, cPos), 0.001);
+
+        f += c + l;
+    }
+
+    return vec3(f);
+}
+
+void main() {
+
+    vec2 p = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+    p = sliders[7] == 1.0 ? abs(p) : p;
 
     int minIdx = 0;
-    for (int i = 0; i < 11; i++)
+    for (int i = 0; i < 12; i++)
     {
         if (buttons[i].y < buttons[minIdx].y)
         {
@@ -326,7 +356,18 @@ void main() {
         }
     }
 
-    vec3 col = gfxArray[minIdx];
+    vec3 col = xorSquare(p);
+    col = minIdx == 1 ? interference(p) : col;
+    col = minIdx == 2 ? triWave(p) : col;
+    col = minIdx == 3 ? worm(p) : col;
+    col = minIdx == 4 ? springStar(p) : col;
+    col = minIdx == 5 ? crossTile(p) : col;
+    col = minIdx == 6 ? pixelateCurve(p) : col;
+    col = minIdx == 7 ? logoRotation(p) : col;
+    col = minIdx == 8 ? triangles(p) : col;
+    col = minIdx == 9 ? neighbor(p) : col;
+    col = minIdx == 10 ? momen(p) : col;
+    col = minIdx == 11 ? expandedLogos(p) : col;
 
     color = vec4(col, 1.0);
 }
