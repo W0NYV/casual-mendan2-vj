@@ -1,2 +1,14 @@
 stages:
-  - fs: "test.frag"
+  - fs: "shaders/gfx001.glsl"
+    target: "gfxTex"
+  - fs: "shaders/feedback.glsl"
+    target: "feedbackTex"
+  - fs: "shaders/out.glsl"
+
+images:
+  - path: "cm2.png"
+    name: "logoTex"
+
+ndi:
+  - source: "TouchDesigner"
+    name: "ndi"
